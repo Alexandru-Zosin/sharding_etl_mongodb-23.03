@@ -1,11 +1,21 @@
+POSIBIL UNELE COMENZI SA FIE AFECTATE DE PATH (am grupat/mutat scripturile in foldere)
+
 nerdctl exec -it mongos mongosh --port 26061 (shell in mongos)
 nerdctl exec -it pgsql bash (in container postgres)
 nerdctl exec -it pgsql psql -U postgres -d synthea (client psql direct)
 
-
+nerdctl compose up -d sau nerdctl compose start
 nerdctl compose stop
-nerdctl compose down # opreste si scoate containerele, DAR PASTREAZA volumele
-nerdctl compose down -v
+nerdctl compose down 
+
+nerdctl network ls (synthea-cluster_synthea-net)
+
+// despre continutul schemei
+nerdctl exec -i mongos mongosh --port 26061 --eval "db=db.getSiblingDB('synthea_mongo'); print('conditions_allergies_patient=' + db.conditions_allergies_patient.countDocuments({})); print('organizations_provider=' + db.organizations_provider.countDocuments({})); print('payer=' + db.payer.countDocuments({})); print('observations_procedures_encounter=' + db.observations_procedures_encounter.countDocuments({}));"
+
+// despre shardingul colectiei
+nerdctl exec -i mongos mongosh --port 26061 --eval "db=db.getSiblingDB('synthea_mongo'); db.observations_procedures_encounter.getShardDistribution()"
+nerdctl exec -i mongos mongosh --port 26061 --eval "db.getSiblingDB('synthea_mongo').stats({ scale: 1024 * 1024 });"
 
 
 // de verificare: nerdctl exec -i mongos mongosh --port 26061 --eval "sh.status()"
@@ -23,21 +33,19 @@ s-ar fi inchis imediat / nu primea nimic de pe stdin)
 
 
 Ordine rulare:
-nerdctl compose up -d   /// nerdctl compose start
-nerdctl ps
 powershell -ExecutionPolicy Bypass -File .\01-init-config-rs.ps1
 powershell -ExecutionPolicy Bypass -File .\02-init-shards-rs.ps1
 powershell -ExecutionPolicy Bypass -File .\03-add-shards.ps1
---
-powershell -ExecutionPolicy Bypass -File .\04-test-sharding.ps1
-
 ///
-powershell -ExecutionPolicy Bypass -File .\10-install-python-mongos.ps1
-
 powershell -ExecutionPolicy Bypass -File .\11-host_synthea-pull.ps1
 powershell -ExecutionPolicy Bypass -File .\11-host-change-crlf.ps1
 powershell -ExecutionPolicy Bypass -File .\11-host-to-psql.ps1
 
 powershell -ExecutionPolicy Bypass -File .\12-create-synthea-schema.ps1
 powershell -ExecutionPolicy Bypass -File .\13-import-synthea-csv.ps1
-powershell -ExecutionPolicy Bypass -File .\14-verify-postgres.ps1
+///
+powershell -ExecutionPolicy Bypass -File .\15-init_mongo_shrds.ps1
+powershell -ExecutionPolicy Bypass -File .\16-etl-psgl-to-mongo.ps1
+powershell -ExecutionPolicy Bypass -File .\17-run-mongo-queries.ps1
+powershell -ExecutionPolicy Bypass -File .\17-run-sql-queries.ps1
+

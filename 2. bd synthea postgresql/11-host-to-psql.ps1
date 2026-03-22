@@ -1,4 +1,4 @@
-$repoDir = "$PWD\synthea"
+$repoDir = "$PWD\..\synthea"
 $outputDirInRepo = "$repoDir\output\csv"
 if (Test-Path $outputDirInRepo) {
     Remove-Item -Recurse -Force $outputDirInRepo
@@ -12,7 +12,7 @@ nerdctl run --rm `
     -v "${repoDir}:/opt/synthea" `
     -w /opt/synthea `
     docker.io/library/eclipse-temurin:17-jdk `
-    bash -lc "./run_synthea -p 1000"
+    bash -lc "./run_synthea -p 80"
 
 # -v volume mount (bind mount  x:y )
 # -w working directory pt container (echivalent cu cd /opt/synthea)

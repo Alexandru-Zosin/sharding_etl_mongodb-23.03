@@ -23,6 +23,3 @@ nerdctl exec pgsql psql -U postgres -d synthea -c "SELECT COUNT(*) AS payers_cou
 nerdctl exec pgsql psql -U postgres -d synthea -c "SELECT COUNT(*) AS procedures_count FROM procedures;"
 nerdctl exec pgsql psql -U postgres -d synthea -c "SELECT COUNT(*) AS providers_count FROM providers;"
 nerdctl exec pgsql psql -U postgres -d synthea -c "SELECT COUNT(*) AS supplies_count FROM supplies;"
-
-nerdctl cp .\14-verify_top_patients.sql pgsql:/tmp/14-verify_top_patients.sql
-nerdctl exec pgsql psql -U postgres -d synthea -f /tmp/14-verify_top_patients.sql
