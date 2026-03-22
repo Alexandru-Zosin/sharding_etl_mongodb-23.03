@@ -1,0 +1,43 @@
+nerdctl exec -it mongos mongosh --port 26061 (shell in mongos)
+nerdctl exec -it pgsql bash (in container postgres)
+nerdctl exec -it pgsql psql -U postgres -d synthea (client psql direct)
+
+
+nerdctl compose stop
+nerdctl compose down # opreste si scoate containerele, DAR PASTREAZA volumele
+nerdctl compose down -v
+
+
+// de verificare: nerdctl exec -i mongos mongosh --port 26061 --eval "sh.status()"
+// exec: executa ceva intr-un container deja ruland (mongos), -i stdin deschis, (-t): pseudo-terminal
+- -i si -t sunt optiuni cum se leaga terminalul meu de procesul pornit in container
+ -i: (sau interactive): redirect. inputul catre procesul din container (fara -i, programul 
+s-ar fi inchis imediat / nu primea nimic de pe stdin)
+ -t: face procesul din container sa creada ca ruleaza intr-un terminal real 
+ // stdout si stderr ale procesului din container sunt redirectionate catre terminalul tau
+
+// mongosh: comanda executata in containerul tinta (mongos), --port, portul la care se conect. mongosh
+( e pornit la portul 26061 )
+// --eval: executa expresia / codul dat ca argument (aka: porneste mongosh, executa comanda, afis. rez)
+
+
+
+Ordine rulare:
+nerdctl compose up -d   /// nerdctl compose start
+nerdctl ps
+powershell -ExecutionPolicy Bypass -File .\01-init-config-rs.ps1
+powershell -ExecutionPolicy Bypass -File .\02-init-shards-rs.ps1
+powershell -ExecutionPolicy Bypass -File .\03-add-shards.ps1
+--
+powershell -ExecutionPolicy Bypass -File .\04-test-sharding.ps1
+
+///
+powershell -ExecutionPolicy Bypass -File .\10-install-python-mongos.ps1
+
+powershell -ExecutionPolicy Bypass -File .\11-host_synthea-pull.ps1
+powershell -ExecutionPolicy Bypass -File .\11-host-change-crlf.ps1
+powershell -ExecutionPolicy Bypass -File .\11-host-to-psql.ps1
+
+powershell -ExecutionPolicy Bypass -File .\12-create-synthea-schema.ps1
+powershell -ExecutionPolicy Bypass -File .\13-import-synthea-csv.ps1
+powershell -ExecutionPolicy Bypass -File .\14-verify-postgres.ps1

@@ -1,0 +1,153 @@
+name: synthea-cluster
+
+#FS: /tmp, /etc, /usr, /var, ... (orice alt fisier creat in container)
+# se pierde la recreate, dar nu la simpla repornire
+
+# volum: stocare separata de container, traieste separat de container
+
+services:
+  cfg1:
+    image: mongo:8.0 # imaginea folosita 
+    container_name: cfg1
+    hostname: cfg1 # numele cu care e accesat in network
+    command: >
+      mongod --configsvr --replSet cfgReplSet --port 26050 --bind_ip_all --dbpath /data/db
+    volumes: # persista datele in acest volum, cfg1-data
+      - cfg1-data:/data/db # /data/db e acelasi, dar separarea este data de cfg1-data, cfg2-data...
+    networks:
+      - synthea-net
+
+  cfg2:
+    image: mongo:8.0
+    container_name: cfg2
+    hostname: cfg2
+    command: >
+      mongod --configsvr --replSet cfgReplSet --port 26050 --bind_ip_all --dbpath /data/db
+    volumes:
+      - cfg2-data:/data/db
+    networks:
+      - synthea-net
+
+  cfg3:
+    image: mongo:8.0
+    container_name: cfg3
+    hostname: cfg3
+    command: >
+      mongod --configsvr --replSet cfgReplSet --port 26050 --bind_ip_all --dbpath /data/db
+    volumes:
+      - cfg3-data:/data/db
+    networks:
+      - synthea-net
+
+  shard1a:
+    image: mongo:8.0
+    container_name: shard1a
+    hostname: shard1a
+    command: >
+      mongod --shardsvr --replSet shard1ReplSet --port 26000 --bind_ip_all --dbpath /data/db
+    volumes:
+      - shard1a-data:/data/db
+    networks:
+      - synthea-net
+
+  shard1b:
+    image: mongo:8.0
+    container_name: shard1b
+    hostname: shard1b
+    command: >
+      mongod --shardsvr --replSet shard1ReplSet --port 26000 --bind_ip_all --dbpath /data/db
+    volumes:
+      - shard1b-data:/data/db
+    networks:
+      - synthea-net
+
+  shard1c:
+    image: mongo:8.0
+    container_name: shard1c
+    hostname: shard1c
+    command: >
+      mongod --shardsvr --replSet shard1ReplSet --port 26000 --bind_ip_all --dbpath /data/db
+    volumes:
+      - shard1c-data:/data/db
+    networks:
+      - synthea-net
+
+  shard2a:
+    image: mongo:8.0
+    container_name: shard2a
+    hostname: shard2a
+    command: >
+      mongod --shardsvr --replSet shard2ReplSet --port 26000 --bind_ip_all --dbpath /data/db
+    volumes:
+      - shard2a-data:/data/db
+    networks:
+      - synthea-net
+
+  shard2b:
+    image: mongo:8.0
+    container_name: shard2b
+    hostname: shard2b
+    command: >
+      mongod --shardsvr --replSet shard2ReplSet --port 26000 --bind_ip_all --dbpath /data/db
+    volumes:
+      - shard2b-data:/data/db
+    networks:
+      - synthea-net
+
+  shard2c:
+    image: mongo:8.0
+    container_name: shard2c
+    hostname: shard2c
+    command: >
+      mongod --shardsvr --replSet shard2ReplSet --port 26000 --bind_ip_all --dbpath /data/db
+    volumes:
+      - shard2c-data:/data/db
+    networks:
+      - synthea-net
+
+  mongos:
+    image: mongo:8.0
+    container_name: mongos
+    hostname: mongos
+    command: >
+      mongos --configdb cfgReplSet/cfg1:26050,cfg2:26050,cfg3:26050 --bind_ip_all --port 26061
+    ports:
+      - "26061:26061" #HOST_PORT (laptop) : CONTAINER_PORT, adica portul 26061 al lpt meu este forward-uit(redirect.) catre  
+    depends_on: # portul 26061 din containerul mongos (aka din afara retelei interne a cont. te ocnectezi la host pe 26061)
+      - cfg1 # si ajungi la mongos(container) e.g.: mongosh --host localhost --port 26061
+      - cfg2
+      - cfg3
+    networks:
+      - synthea-net
+
+  pgsql:
+    image: postgres:16
+    container_name: pgsql
+    hostname: pgsql
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: synthea
+    ports:
+      - "5432:5432"
+    volumes: # volumul folosit
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - synthea-net
+
+networks:
+  synthea-net:
+    driver: bridge # retea de tip bridge, aka toate containerele pot comunica intre ele si isi pot rezolva numele intre ele
+
+# declararea volumelor care vor fi folosite (named volumes -> probabil sunt intr-un filesystem intern WSL sau VM ascuns de Rancher)
+volumes: # fiecare container are PROPRIUL FILESYSTEM izolat, deci fiecare named volume este separat
+  cfg1-data: # nu are nicio legatura cu niciun volum din cele de mai jos
+  cfg2-data:
+  cfg3-data:
+  shard1a-data:
+  shard1b-data:
+  shard1c-data:
+  shard2a-data:
+  shard2b-data:
+  shard2c-data:
+  pgdata:
