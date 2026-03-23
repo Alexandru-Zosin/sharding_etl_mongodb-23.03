@@ -1,10 +1,6 @@
-// =============================================================================
 // BIANCA
-// =============================================================================
 
-// -----------------------------------------------------------------------------
 // 1. Top 5 afectiuni dupa costul total al encounter-urilor in care au aparut.
-// -----------------------------------------------------------------------------
 print("\n--- Query 1: Top 5 afectiuni dupa costul total al encounter-urilor ---");
 printjson(
   db.conditions_allergies_patient.aggregate([
@@ -33,9 +29,7 @@ printjson(
 );
 
 
-// -----------------------------------------------------------------------------
 // 2. Top payers dupa numar de pacienti distincti si acoperire medie per pacient.
-// -----------------------------------------------------------------------------
 print("\n--- Query 2: Top payers dupa pacienti distincti si acoperire medie ---");
 printjson(
   db.observations_procedures_encounter.aggregate([
@@ -80,9 +74,7 @@ printjson(
 );
 
 
-// -----------------------------------------------------------------------------
 // 3. Pentru fiecare gen, top 3 conditii medicale dupa numar de aparitii.
-// -----------------------------------------------------------------------------
 print("\n--- Query 3: Top 3 conditii medicale pentru fiecare gen ---");
 printjson(
   db.conditions_allergies_patient.aggregate([
@@ -120,9 +112,7 @@ printjson(
 );
 
 
-// -----------------------------------------------------------------------------
 // 4. Asiguratorii cu cea mai mare suma neacoperita.
-// -----------------------------------------------------------------------------
 print("\n--- Query 4: Asiguratorii cu cea mai mare suma neacoperita ---");
 printjson(
   db.observations_procedures_encounter.aggregate([
@@ -168,13 +158,9 @@ printjson(
 );
 
 
-// =============================================================================
 // ANDREEA
-// =============================================================================
 
-// -----------------------------------------------------------------------------
 // 5. Top 5 pacienti cu cele mai multe proceduri si cost total al procedurilor.
-// -----------------------------------------------------------------------------
 print("\n--- Query 5: Top 5 pacienti dupa numarul si costul procedurilor ---");
 printjson(
   db.observations_procedures_encounter.aggregate([
@@ -193,9 +179,7 @@ printjson(
 );
 
 
-// -----------------------------------------------------------------------------
 // 6. Organizatii cu multe encounter-uri si cost mediu ridicat.
-// -----------------------------------------------------------------------------
 print("\n--- Query 6: Organizatii cu multe encounter-uri si cost mediu ridicat ---");
 printjson(
   db.observations_procedures_encounter.aggregate([
@@ -243,9 +227,7 @@ printjson(
 );
 
 
-// -----------------------------------------------------------------------------
 // 7. Pacienti al caror cost total al procedurilor este peste media tuturor.
-// -----------------------------------------------------------------------------
 print("\n--- Query 7: Pacienti cu cost total al procedurilor peste medie ---");
 printjson(
   db.observations_procedures_encounter.aggregate([
@@ -287,9 +269,7 @@ printjson(
 );
 
 
-// -----------------------------------------------------------------------------
 // 8. Cele mai frecvente conditii la pacientii cu cel putin 3 proceduri.
-// -----------------------------------------------------------------------------
 print("\n--- Query 8: Cele mai frecvente conditii la pacientii cu cel putin 3 proceduri ---");
 printjson(
   db.observations_procedures_encounter.aggregate([
@@ -323,47 +303,9 @@ printjson(
 );
 
 
-// =============================================================================
 // ALEX
-// =============================================================================
-
-// -----------------------------------------------------------------------------
-// 9. Top 10 combinatii conditie + procedura care apar in acelasi encounter.
-// -----------------------------------------------------------------------------
-print("\n--- Query 9: Top 10 combinatii conditie plus procedura in acelasi encounter ---");
-printjson(
-  db.conditions_allergies_patient.aggregate([
-    { $unwind: "$conditions" },
-    {
-      $lookup: {
-        from: "observations_procedures_encounter",
-        localField: "conditions.encounter_id",
-        foreignField: "encounter_id",
-        as: "enc"
-      }
-    },
-    { $unwind: "$enc" },
-    { $unwind: "$enc.procedures" },
-    {
-      $group: {
-        _id: {
-          conditie: "$conditions.description",
-          procedura: "$enc.procedures.description"
-        },
-        nr_corelari: { $sum: 1 }
-      }
-    },
-    { $match: { nr_corelari: { $gte: 3 } } },
-    { $sort: { nr_corelari: -1, "_id.conditie": 1, "_id.procedura": 1 } },
-    { $limit: 10 }
-  ]).toArray()
-);
-
-
-// -----------------------------------------------------------------------------
-// 10. Pentru fiecare payer, procentul din cost care ramane neacoperit.
-// -----------------------------------------------------------------------------
-print("\n--- Query 10: Procentul din cost ramas neacoperit pentru fiecare payer ---");
+// 9. Pentru fiecare payer, procentul din costul total al claim-urilor care ramane neacoperit.
+print("\n--- Query 9: Procentul din cost ramas neacoperit pentru fiecare payer ---");
 printjson(
   db.observations_procedures_encounter.aggregate([
     {
@@ -421,9 +363,10 @@ printjson(
 
 
 // -----------------------------------------------------------------------------
-// 11. Organizatiile cu numar de provideri peste media tuturor organizatiilor.
+// 10. Organizatiile in care numarul de provideri este peste media tuturor organizatiilor, 
+    //impreuna cu nr de encounter-uri si costul mediu al acestora.
 // -----------------------------------------------------------------------------
-print("\n--- Query 11: Organizatii cu numar de provideri peste medie ---");
+print("\n--- Query 10: Organizatii cu numar de provideri peste medie ---");
 printjson(
   db.organizations_provider.aggregate([
     {
@@ -478,10 +421,10 @@ printjson(
 
 
 // -----------------------------------------------------------------------------
-// 12. Pacienti care au alergii si au avut cel putin un encounter cu cost
-//     peste media tuturor encounter-urilor.
+// 11. Pacienti care au alergii si pt care valoarea maxima a unui encounter depaseste costul mediu
+//     al tuturor encounter-urilor.
 // -----------------------------------------------------------------------------
-print("\n--- Query 12: Pacienti cu alergii si encounter peste media costurilor ---");
+print("\n--- Query 11: Pacienti cu alergii si encounter peste media costurilor ---");
 printjson(
   db.observations_procedures_encounter.aggregate([
     {
@@ -534,9 +477,9 @@ printjson(
 
 
 // -----------------------------------------------------------------------------
-// 13. Cost mediu al encounter-urilor pe cohorte de an de nastere.
-// -----------------------------------------------------------------------------
-print("\n--- Query 13: Cost mediu al encounter-urilor pe cohorte de an de nastere ---");
+//12. Pentru fiecare an de nastere, costul mediu si costul total al encounter-urilor
+//    asociate pacientilor nascuti in acel an.// -----------------------------------------------------------------------------
+print("\n--- Query 12: Cost mediu al encounter-urilor pe cohorte (pe an de nastere) ---");
 printjson(
   db.conditions_allergies_patient.aggregate([
     {

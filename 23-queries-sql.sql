@@ -189,26 +189,9 @@ LIMIT 10;
    ALEX
    ========================================================================== */
 
-/* -----------------------------------------------------------------------------
-9. Top 10 combinatii conditie + procedura care apar in acelasi encounter.
-   Ideea: pattern clinic util, mai apropiat de analiza operationala reala.
------------------------------------------------------------------------------ */
-SELECT
-    c.description AS conditie,
-    pr.description AS procedura,
-    COUNT(*) AS nr_corelari
-FROM conditions c
-JOIN procedures pr
-    ON pr.encounter = c.encounter
-GROUP BY c.description, pr.description
-HAVING COUNT(*) >= 3
-ORDER BY nr_corelari DESC, conditie ASC, procedura ASC
-LIMIT 10;
-
 
 /* -----------------------------------------------------------------------------
-10. Pentru fiecare payer, ponderea costului neacoperit din costul total.
-    Ideea: KPI financiar realist.
+ 9. Pentru fiecare payer, procentul din costul total al claim-urilor care ramane neacoperit.
 ----------------------------------------------------------------------------- */
 SELECT
     py.name AS payer_name,
@@ -229,9 +212,8 @@ ORDER BY procent_neacoperit DESC, total_neacoperit DESC;
 
 
 /* -----------------------------------------------------------------------------
-11. Organizatiile in care numarul de provideri este peste medie si care au
-    si multe encounter-uri.
-    Ideea: combinam structura organizationala cu volumul operational.
+10. Organizatiile in care numarul de provideri este peste media tuturor organizatiilor, 
+    impreuna cu nr de encounter-uri si costul mediu al acestora.
 ----------------------------------------------------------------------------- */
 WITH providers_per_org AS (
     SELECT
@@ -262,8 +244,8 @@ ORDER BY ppo.nr_providers DESC, nr_encounters DESC;
 
 
 /* -----------------------------------------------------------------------------
-12. Pacientii care au alergii si au avut cel putin un encounter cu cost mare.
-    Ideea: intersectam doua zone diferite ale modelului.
+11. Pacienti care au alergii si pt care valoarea maxima a unui encounter depaseste costul mediu
+//     al tuturor encounter-urilor.
 ----------------------------------------------------------------------------- */
 SELECT
     p.id AS patient_id,
@@ -285,9 +267,8 @@ ORDER BY max_claim_cost DESC, nr_allergii DESC;
 
 
 /* -----------------------------------------------------------------------------
-13. Pentru fiecare an de nastere, costul mediu total al encounter-urilor
-    pacientilor din cohorta respectiva.
-    Ideea: analiza pe cohorte.
+12. Pentru fiecare an de nastere, costul mediu si costul total al encounter-urilor
+    asociate pacientilor nascuti in acel an.
 ----------------------------------------------------------------------------- */
 SELECT
     EXTRACT(YEAR FROM p.birthdate) AS an_nastere,
