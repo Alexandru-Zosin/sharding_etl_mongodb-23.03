@@ -311,23 +311,23 @@ printjson(
     {
       $addFields: {
         neacoperit: { $subtract: ["$total_claim_cost", "$payer_coverage"] }
-      }
+      } // adaugam in fiecare document campul neacoperit sa nu repetam expr total - cov
     },
     {
       $group: {
-        _id: "$payer_id",
+        _id: "$payer_id", // cheia de grupare
         total_claim_cost: { $sum: "$total_claim_cost" },
         total_acoperit: { $sum: "$payer_coverage" },
         total_neacoperit: { $sum: "$neacoperit" }
-      }
+      } // produce un document per payer
     },
     {
       $addFields: {
         procent_neacoperit: {
           $cond: [
             { $eq: ["$total_claim_cost", 0] },
-            0,
-            {
+            0, // val returnata daca e adev conditia (if)
+            { // altfel (else)
               $multiply: [
                 { $divide: ["$total_neacoperit", "$total_claim_cost"] },
                 100
@@ -361,12 +361,7 @@ printjson(
   ]).toArray()
 );
 
-
-// -----------------------------------------------------------------------------
-// 10. Organizatiile in care numarul de provideri este peste media tuturor organizatiilor, 
-    //impreuna cu nr de encounter-uri si costul mediu al acestora.
-// -----------------------------------------------------------------------------
-print("\n--- Query 10: Organizatii cu numar de provideri peste medie ---");
+print("\n--- Query 10: Organizatii cu numar de provideri peste medie, nr encounter-uri si cost mediu ---");
 printjson(
   db.organizations_provider.aggregate([
     {
@@ -406,19 +401,31 @@ printjson(
       }
     },
     {
+      $addFields: {
+        nr_encounters: { $size: "$encounters" },
+        avg_claim_cost: {
+          $cond: [
+            { $eq: [{ $size: "$encounters" }, 0] },
+            null,
+            { $avg: "$encounters.total_claim_cost" }
+          ]
+        }
+      }
+    },
+    {
       $project: {
         _id: 0,
         organization_id: "$rows.organization_id",
         organization_name: "$rows.organization_name",
         nr_providers: "$rows.nr_providers",
         avg_nr_providers: 1,
-        nr_encounters: { $size: "$encounters" }
+        nr_encounters: 1,
+        avg_claim_cost: 1
       }
     },
     { $sort: { nr_providers: -1, nr_encounters: -1 } }
   ]).toArray()
 );
-
 
 // -----------------------------------------------------------------------------
 // 11. Pacienti care au alergii si pt care valoarea maxima a unui encounter depaseste costul mediu
@@ -478,7 +485,7 @@ printjson(
 
 // -----------------------------------------------------------------------------
 //12. Pentru fiecare an de nastere, costul mediu si costul total al encounter-urilor
-//    asociate pacientilor nascuti in acel an.// -----------------------------------------------------------------------------
+//    asociate pacientilor nascuti in acel an (min 3 pacienti in acel an).// -----
 print("\n--- Query 12: Cost mediu al encounter-urilor pe cohorte (pe an de nastere) ---");
 printjson(
   db.conditions_allergies_patient.aggregate([
@@ -509,7 +516,7 @@ printjson(
         nr_pacienti: { $size: "$nr_pacienti_set" }
       }
     },
-    { $match: { nr_pacienti: { $gte: 5 } } },
+    { $match: { nr_pacienti: { $gte: 3 } } },
     {
       $project: {
         _id: 0,

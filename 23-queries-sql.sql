@@ -215,14 +215,14 @@ ORDER BY procent_neacoperit DESC, total_neacoperit DESC;
 10. Organizatiile in care numarul de provideri este peste media tuturor organizatiilor, 
     impreuna cu nr de encounter-uri si costul mediu al acestora.
 ----------------------------------------------------------------------------- */
-WITH providers_per_org AS (
+WITH providers_per_org AS ( -- nr prov per organiz
     SELECT
         p.organization,
         COUNT(*) AS nr_providers
     FROM providers p
     GROUP BY p.organization
 ),
-avg_providers AS (
+avg_providers AS ( -- media nr provideri pe organizatie 
     SELECT AVG(nr_providers) AS avg_nr_providers
     FROM providers_per_org
 )
@@ -232,7 +232,7 @@ SELECT
     COUNT(e.id) AS nr_encounters,
     ROUND(AVG(e.total_claim_cost), 2) AS avg_claim_cost
 FROM providers_per_org ppo
-JOIN avg_providers ap
+JOIN avg_providers ap -- alipim la fiecare rand din stanga singurul rand din avg_provider
     ON 1 = 1
 JOIN organizations o
     ON o.id = ppo.organization
@@ -255,7 +255,7 @@ SELECT
     MAX(e.total_claim_cost) AS max_claim_cost
 FROM patients p
 JOIN allergies a
-    ON a.patient = p.id
+    ON a.patient = p.id -- daca nu are alergii, nu intra in join (nu apare)
 JOIN encounters e
     ON e.patient = p.id
 GROUP BY p.id, p.first, p.last
@@ -268,7 +268,7 @@ ORDER BY max_claim_cost DESC, nr_allergii DESC;
 
 /* -----------------------------------------------------------------------------
 12. Pentru fiecare an de nastere, costul mediu si costul total al encounter-urilor
-    asociate pacientilor nascuti in acel an.
+    asociate pacientilor nascuti in acel an (cohorte/ani cu minim 3 pacienti / an).
 ----------------------------------------------------------------------------- */
 SELECT
     EXTRACT(YEAR FROM p.birthdate) AS an_nastere,
@@ -279,5 +279,5 @@ FROM patients p
 JOIN encounters e
     ON e.patient = p.id
 GROUP BY EXTRACT(YEAR FROM p.birthdate)
-HAVING COUNT(DISTINCT p.id) >= 5
+HAVING COUNT(DISTINCT p.id) >= 3
 ORDER BY an_nastere ASC;
