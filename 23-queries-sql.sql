@@ -101,6 +101,29 @@ HAVING COUNT(*) >= 10
 ORDER BY total_neacoperit DESC, total_claim_cost DESC;
 
 
+/*
+4*
+*/
+SELECT 
+    py.id AS payer_id,
+    py.name AS payer_name,
+    SUM(e.total_claim_cost - e.payer_coverage) AS total_neacoperit
+FROM encounters e
+JOIN payers py 
+    ON e.payer = py.id
+GROUP BY py.id, py.name
+HAVING SUM(e.total_claim_cost - e.payer_coverage) > (
+    SELECT AVG(total_neacoperit)
+    FROM (
+        SELECT 
+            e2.payer,
+            SUM(e2.total_claim_cost - e2.payer_coverage) AS total_neacoperit
+        FROM encounters e2
+        GROUP BY e2.payer
+    ) sub
+)
+ORDER BY total_neacoperit DESC;
+
 /* =============================================================================
    ANDREEA
    ========================================================================== */

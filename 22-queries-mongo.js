@@ -158,6 +158,63 @@ printjson(
 );
 
 
+// 4*
+print("\n--- Query 4*: Payers cu total neacoperit peste media globala ---");
+
+printjson(
+  db.observations_procedures_encounter.aggregate([
+    {
+      $addFields: {
+        neacoperit: { $subtract: ["$total_claim_cost", "$payer_coverage"] }
+      }
+    },
+    {
+      $group: {
+        _id: "$payer_id",
+        total_neacoperit: { $sum: "$neacoperit" }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        avg_neacoperit: { $avg: "$total_neacoperit" },
+        payers: {
+          $push: {
+            payer_id: "$_id",
+            total_neacoperit: "$total_neacoperit"
+          }
+        }
+      }
+    },
+    { $unwind: "$payers" },
+    {
+      $match: {
+        $expr: {
+          $gt: ["$payers.total_neacoperit", "$avg_neacoperit"]
+        }
+      }
+    },
+    {
+      $lookup: {
+        from: "payer",
+        localField: "payers.payer_id",
+        foreignField: "payer_id",
+        as: "payer_info"
+      }
+    },
+    { $unwind: "$payer_info" },
+    {
+      $project: {
+        _id: 0,
+        payer_id: "$payers.payer_id",
+        payer_name: "$payer_info.name",
+        total_neacoperit: "$payers.total_neacoperit",
+        avg_neacoperit: 1
+      }
+    },
+    { $sort: { total_neacoperit: -1 } }]).toArray());
+
+
 // ANDREEA
 
 // 5. Top 5 pacienti cu cele mai multe proceduri si cost total al procedurilor.
